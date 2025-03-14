@@ -1,0 +1,11 @@
+platform :ios, '16.0'
+
+target 'shared' do
+  use_frameworks!
+
+  # Incluir el framework generado por KMP
+  pod 'Shared', :path => '../shared'
+
+  # Incluir TensorFlow Lite
+  pod 'TensorFlowLiteSwift', '~> 2.10.0'
+end

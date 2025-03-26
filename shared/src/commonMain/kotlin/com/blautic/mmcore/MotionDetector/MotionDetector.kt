@@ -54,12 +54,12 @@ class MotionDetector(private val model: Model, val context: Any?) {
     fun start(){
         inferenceInterface.start(model.id.toString(), object :ModelDownloadCallback {
             override fun onCorrect() {
-                Logger.log(1, "MMCORE ERROR", "MODEL DOWNLOAD: EXITO")
+                //Logger.log(1, "MMCORE ERROR", "MODEL DOWNLOAD: EXITO")
                 isStarted = true
                 estado = 1
             }
             override fun onError(error: String) {
-                Logger.log(2, "MMCORE ERROR", "MODEL DOWNLOAD: ${error}")
+                //Logger.log(2, "MMCORE ERROR", "MODEL DOWNLOAD: ${error}")
                 contador_reintentos += 1
                 if(contador_reintentos <= 4){
                     start()
@@ -92,9 +92,9 @@ class MotionDetector(private val model: Model, val context: Any?) {
 
     fun inference(datasList: Array<Array<Array<Array<FloatArray>>>>, inferenceCounter: Long, datosExpl: List<Triple<Int, List<Pair<Int, Float>>, Int>> = listOf()){
         synchronized(lock) {
-            Logger.log(1, "MMCORE", "inferencia activa... $isStarted")
+            //Logger.log(1, "MMCORE", "inferencia activa... $isStarted")
             inferenceInterface.takeIf { isStarted }?.let { interpreter ->
-                Logger.log(1, "MMCORE", "Calculando inferencia $inferenceCounter")
+                //Logger.log(1, "MMCORE", "Calculando inferencia $inferenceCounter")
                 val mapOfIndicesToOutputs = interpreter.runForMultipleInputsOutputs(datasList)
                 if(mapOfIndicesToOutputs.isNotEmpty()) {
                     //Log.d("Resultados", "${mapOfIndicesToOutputs[0]?.get(0)?.get(0)} || ${mapOfIndicesToOutputs[0]?.get(0)?.get(1)}")
@@ -107,11 +107,11 @@ class MotionDetector(private val model: Model, val context: Any?) {
                                 ?: 0f) * 100f) / totalProb
                     }
                     val nombres = model.movements.sortedBy { it1 -> it1.fldSLabel }
-                    Logger.log(
+                    /*Logger.log(
                         1,
                         "MMCORE",
                         "Resultados inferencia $inferenceCounter: ${nombres.mapIndexed { index1, nom -> "${nom.fldSLabel}:${scores[index1]} " }}"
-                    )
+                    )*/
                     var indiceCorrect = model.movements.sortedBy { it1 -> it1.fldSLabel }
                         .indexOfFirst { it1 -> it1.fldSLabel == model.fldSName }
                     if (indiceCorrect < 0) {
@@ -122,11 +122,11 @@ class MotionDetector(private val model: Model, val context: Any?) {
                     if (indiceOther < 0) {
                         indiceOther = 0
                     }
-                    Logger.log(
+                    /*Logger.log(
                         1,
                         "MMCORE",
                         "Resultado inferencia $inferenceCounter = ${scores[indiceCorrect]}"
-                    )
+                    )*/
                     /*if(model.fldSName > "Other"){
                         scores = scores.reversedArray()
                     }*/
@@ -200,7 +200,7 @@ class MotionDetector(private val model: Model, val context: Any?) {
                     }
                     motionDetectorListener?.onOutputScores(floatArrayOf(resultado), datosExpl)
                 }else{
-                    Logger.log(2, "Inferencia", "Datos de resultado vacios")
+                    //Logger.log(2, "Inferencia", "Datos de resultado vacios")
                 }
             }
         }

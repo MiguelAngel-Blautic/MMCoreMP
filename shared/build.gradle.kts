@@ -11,6 +11,21 @@ plugins {
 }
 
 kotlin {
+    tasks.withType<Copy>().configureEach {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+    tasks.register("copyResourcesToIOSBundle") {
+        doLast {
+            val resourcesDir = file("src/iosMain/resources")
+            val outputDir = file("$buildDir/ios/iosMain/resources") // Esto es donde se debe copiar los recursos
+
+            // Copia los archivos al directorio de recursos del bundle de iOS
+            copy {
+                from(resourcesDir)
+                into(outputDir)
+            }
+        }
+    }
     androidTarget {
         compilations.all {
             compileTaskProvider.configure {
@@ -33,9 +48,21 @@ kotlin {
             baseName = "shared"
             isStatic = true
         }
+        pod("MediaPipeTasksVision")
     }
     sourceSets {
+        iosMain {
+            resources.srcDirs("resources")
+            resources.srcDirs("./resources")
+            resources.srcDirs("./iosMain/resources")
+            resources.srcDirs("./src/iosMain/resources")
+            resources.srcDirs("./shared/src/iosMain/resources")
+            resources.srcDirs("iosMain/resources")
+            resources.srcDirs("src/iosMain/resources")
+            resources.srcDirs("shared/src/iosMain/resources")
+        }
         commonMain.dependencies {
+            implementation(libs.tasks.vision)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.datetime)
@@ -53,7 +80,10 @@ kotlin {
             implementation(libs.tensorflow.lite)
             implementation(libs.tensorflow.lite.gpu)
             implementation(libs.okhttp)
+            implementation(libs.tasks.vision)
             implementation(libs.kotlinx.coroutines.android)
+            implementation(libs.androidx.camera.view)
+            implementation(libs.junit)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -65,6 +95,7 @@ kotlin {
         implementation(libs.kotlinx.datetime)
         implementation(libs.ktor.client.core)
         implementation(libs.kotlinx.serialization.json)
+        implementation(libs.tasks.vision)
     }
 }
 android {
@@ -81,6 +112,15 @@ android {
 dependencies {
     implementation(libs.androidx.lifecycle.common.jvm)
     implementation(libs.androidx.runtime.android)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+}
+tasks.register<Jar>("jarWithResources") {
+    from("assets")  // Asegúrate de que la carpeta sea correcta
+
+    archiveBaseName.set("shared")  // Nombre de tu archivo .jar
+    archiveVersion.set("1.0.27")  // Versión del archivo .jar
+    archiveClassifier.set("resources")  // Añadir un classifier para los recursos
 }
 
 publishing {
@@ -91,9 +131,10 @@ publishing {
     publications {
         create<MavenPublication>("release") {
             from(components["kotlin"])
+            artifact(tasks["jarWithResources"])
             groupId = "com.blautic"      // ← Nombre del paquete (group)
             artifactId = "mmcore"      // ← Nombre de la librería
-            version = "1.0.25"               // ← Versión actual
+            version = "1.0.28"               // ← Versión actual
         }
     }
 }

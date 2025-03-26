@@ -111,7 +111,7 @@ class BluetoothManagerAndroid(bluetoothManagerCallback: BluetoothManagerCallback
     }
 
     override fun write(peripheralName: String, characteristic: String, value: ByteArray) {
-        Logger.log(1, "ESCRITURA", "Inicio de escritura")
+        //Logger.log(1, "ESCRITURA", "Inicio de escritura")
         val gatt = discoveredPeripherals[peripheralName]
 
         val characteristic = gatt?.services?.flatMap { it.characteristics }
@@ -119,9 +119,9 @@ class BluetoothManagerAndroid(bluetoothManagerCallback: BluetoothManagerCallback
 
         if (characteristic != null) {
             var success = gatt.writeCharacteristic(characteristic, value, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
-            Logger.log(1, "ESCRITURA", "Escribido en $success")
+            //Logger.log(1, "ESCRITURA", "Escribido en $success")
             if (success != 0) {
-                Logger.log(1, "ESCRITURA", "Escribiendo en característica $characteristic con valor $value")
+                //Logger.log(1, "ESCRITURA", "Escribiendo en característica $characteristic con valor $value")
             } else {
                 Logger.log(2, "ESCRITURA", "Error al escribir en característica $characteristic")
             }

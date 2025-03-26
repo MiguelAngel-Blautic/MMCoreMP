@@ -5,6 +5,7 @@ import Entity.BodyPart
 import Entity.DetectedObject
 import Entity.KeyPoint
 import Entity.ObjetLabel
+import Entity.Objeto
 import Entity.Person
 import Entity.PointF
 import Entity.SensorPosicion
@@ -17,6 +18,8 @@ import Sensor.TypeData
 import Sensor.TypeSensor
 import Utils.ContextProvider
 import Utils.Logger
+import com.blautic.mmcore.Camera.ImageDetectorCallback
+import com.blautic.mmcore.Camera.ImageDetectorFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -26,9 +29,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.periodUntil
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import kotlin.coroutines.coroutineContext
@@ -40,7 +45,7 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-class MMCore(val context: Any?) {
+class MMCore(val context: Any?): ImageDetectorCallback {
     fun getNombre() = "MMCore 2.0"
     private var models: List<Model> = listOf()
     private var indices: List<Int> = listOf()
@@ -66,8 +71,9 @@ class MMCore(val context: Any?) {
     private val deviceManager = DevicesManager(context)
     //private var objectDetector = ObjectDetectorFactory.create(this, ContextProvider.getContext())
     //private var moveNet = PoseLandmarkerFactory.create(this, ContextProvider.getContext())
+    private var imageDetector = ImageDetectorFactory.create(context, this)
     private var libreInfObj = true
-    private var sleepTime = 100L
+    private var sleepTime = 1000L
     private var frontCamera = true
     private var rotacion = 0f
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -76,7 +82,7 @@ class MMCore(val context: Any?) {
     private val _motionDetectorFlow = MutableStateFlow<Pair<Int, List<Float>>?>(null)
     private val _personRawFlow = MutableStateFlow<Person?>(null)
     private val _personListFlow = MutableStateFlow<List<Person>?>(null)
-    private val _objectsRawFlow = MutableStateFlow<List<DetectedObject>?>(null)
+    private val _objectsRawFlow = MutableStateFlow<List<Objeto>?>(null)
     private val _motionDetectorCorrectFlow = MutableStateFlow<Pair<Int, Float>?>(null)
     private val _motionDetectorPosicionFlow = MutableStateFlow<String?>(null)
     private val _explicabilidadDatasFlow = MutableStateFlow<List<ResultadoEstadistica>?>(null)
@@ -149,7 +155,7 @@ class MMCore(val context: Any?) {
     private fun addSensorList(lista: MutableList<TypeSensor>, posicion: Int){
         val index = sensoresPosicionAux.indexOfFirst { it.posicion == posicion }
         if(index > -1){
-            Logger.log(1, "MMCORE-SETMODELS", "Sensor Existente")
+            //Logger.log(1, "MMCORE-SETMODELS", "Sensor Existente")
             val newList: MutableList<TypeSensor> = mutableListOf()
             lista.forEach { tipo ->
                 val indice = sensoresPosicionAux[index].tipoSensor.indexOfFirst { itTipo -> itTipo == tipo }
@@ -159,10 +165,10 @@ class MMCore(val context: Any?) {
             }
             sensoresPosicionAux[index].tipoSensor = newList
         }else{
-            Logger.log(1, "MMCORE-SETMODELS", "Nuevo Sensor")
+            //Logger.log(1, "MMCORE-SETMODELS", "Nuevo Sensor")
             sensoresPosicionAux.add(SensorPosicion(lista, posicion))
         }
-        Logger.log(1, "MMCORE-SETMODELS", "Sensores: ${sensoresPosicionAux.map { it1 ->  "${it1.posicion}-${it1.tipoSensor.map { it2 -> "${it2.name}" }}" }}")
+        //Logger.log(1, "MMCORE-SETMODELS", "Sensores: ${sensoresPosicionAux.map { it1 ->  "${it1.posicion}-${it1.tipoSensor.map { it2 -> "${it2.name}" }}" }}")
     }
     private fun setSensorsNum(num: Int) {
         if(deviceManager.devices.size != num){
@@ -252,7 +258,7 @@ class MMCore(val context: Any?) {
         started = true
         enableAllCache(true)
         motionDetectors[index].let { motionDetector ->
-            Logger.log(1, "MOTIONDETECTOR", "Creando listener for ($index)")
+            //Logger.log(1, "MOTIONDETECTOR", "Creando listener for ($index)")
             motionDetector.setMotionDetectorListener(object :
                 MotionDetector.MotionDetectorListener {
 
@@ -275,7 +281,7 @@ class MMCore(val context: Any?) {
                             //explicabilidadImage[index] = getShaiImage(index)
                             //explicabilidad[index] = getShai(index)
                             explicabilidad[index] = datasInferencia
-                            Logger.log(1, "MMCORE-Explicabilidad", "Explicabilidad añadida: ${explicabilidad[index].size}")
+                            //Logger.log(1, "MMCORE-Explicabilidad", "Explicabilidad añadida: ${explicabilidad[index].size}")
                         }
                         if(series[index].size >= 1) {
                             _dataInferedFlow.value = null
@@ -299,20 +305,20 @@ class MMCore(val context: Any?) {
                     _motionDetectorTimeFlow.value = Pair(index, time)
                 }
             })
-            Logger.log(1, "MMCORE", "Iniciando md")
+            //Logger.log(1, "MMCORE", "Iniciando md")
             motionDetector.start()
-            Logger.log(1, "MMCORE", "Md iniciado")
+            //Logger.log(1, "MMCORE", "Md iniciado")
         }
     }
 
 
     fun onSensorChange(index: Int, typedata: TypeData): StateFlow<Pair<Float, Int>> {
-        Logger.log(1, "MMCORE", "TypeSensors ($index): $sensoresPosicion")
+        //Logger.log(1, "MMCORE", "TypeSensors ($index): $sensoresPosicion")
         val id = sensoresPosicion.indexOfFirst { it.posicion == index }
         deviceManager.devices[id].sensorDatas[deviceManager.devices[id].typeSensor.Sensors.indexOf(
             typedata
         )].enableFlow = true
-        Logger.log(1, "LECTURA", "Habilitada")
+        //Logger.log(1, "LECTURA", "Habilitada")
         return deviceManager.devices[id].sensorDatas[deviceManager.devices[id].typeSensor.Sensors.indexOf(
             typedata
         )].dataFlow
@@ -324,7 +330,7 @@ class MMCore(val context: Any?) {
     fun setmodels(models: List<Model>): Boolean{
         stopMotionDetector()
         if(started){
-            Logger.log(1, "MMCORE-SETMODELS", "Inferencias en curso")
+            //Logger.log(1, "MMCORE-SETMODELS", "Inferencias en curso")
             return false
         }
         estadisticas = MutableList(models.size){ listOf() }
@@ -350,7 +356,7 @@ class MMCore(val context: Any?) {
         cantidades = mutableListOf()
         setSensorsList(models)
         val hayTipoSensorVacio = sensoresPosicion.any { it.tipoSensor.isEmpty() }
-        Logger.log(1, "MMCORE", "ListaSensores = ${sensoresPosicion}")
+        //Logger.log(1, "MMCORE", "ListaSensores = ${sensoresPosicion}")
         return if(hayTipoSensorVacio) {
             false
         }else{
@@ -363,7 +369,7 @@ class MMCore(val context: Any?) {
                 series.add(mutableListOf())
                 motionDetectors.add(MotionDetector(model, context))
                 inferenceCounter.add(0L)
-                Logger.log(1, "MMCORE", "Par detector creado")
+                //Logger.log(1, "MMCORE", "Par detector creado")
                 model.dispositivos.forEachIndexed{ index, dispositivo ->
                     for(tipoDato in TypeData.entries){
                         if(tipoDato.id == dispositivo.fkSensor){
@@ -387,7 +393,7 @@ class MMCore(val context: Any?) {
     fun setSensorsList(models: List<Model>){
         sensoresPosicionAux = mutableListOf()
         models.forEachIndexed { index1, model ->
-            Logger.log(1,"MMCORE-SETMODELS", "Modelo $index1")
+            //Logger.log(1,"MMCORE-SETMODELS", "Modelo $index1")
             var posicion = model.dispositivos[0].fkPosicion
             var mpu = false
             var emg = false
@@ -406,7 +412,7 @@ class MMCore(val context: Any?) {
                             lista.add(TypeSensor.BIO2)
                         }
                         addSensorList(lista, posicion)
-                        Logger.log(1, "MMCORE-SETMODELS", "Sensor $posicion: ${lista.map { it1 -> it1.name }}")
+                        //Logger.log(1, "MMCORE-SETMODELS", "Sensor $posicion: ${lista.map { it1 -> it1.name }}")
                     }
                     posicion = it.fkPosicion
                     mpu = false
@@ -429,7 +435,7 @@ class MMCore(val context: Any?) {
                     lista.add(TypeSensor.BIO2)
                 }
                 addSensorList(lista, posicion)
-                Logger.log(1, "MMCORE-SETMODELS", "Sensor $posicion: ${lista.map { it1 -> it1.name }}")
+                //Logger.log(1, "MMCORE-SETMODELS", "Sensor $posicion: ${lista.map { it1 -> it1.name }}")
             }
         }
         var desconectar = false
@@ -448,7 +454,7 @@ class MMCore(val context: Any?) {
         }
         sensoresPosicion = sensoresPosicionAux
         if(desconectar) {
-            Logger.log(1,"MMCORE-SETMODELS", "Desconexion forzada por cambio de sensores")
+            //Logger.log(1,"MMCORE-SETMODELS", "Desconexion forzada por cambio de sensores")
             disconnectAll()
         }
     }
@@ -457,7 +463,7 @@ class MMCore(val context: Any?) {
             dev.enableAllCache(enable)
         }
     fun setExplicabilidad(index: Int, estadistic: List<ObjetoEstadistica>): Boolean{
-        Logger.log(1, "MMCORE", "SET STADISTIC: ($index) ${estadistic.map { e -> "${e.id}-${e.idPosicion}" }}")
+        //Logger.log(1, "MMCORE", "SET STADISTIC: ($index) ${estadistic.map { e -> "${e.id}-${e.idPosicion}" }}")
         if(index >= estadisticas.size){
             return false
         }
@@ -483,16 +489,16 @@ class MMCore(val context: Any?) {
                 if (posicion != 0) {
                     val elem = elemento.find { it1 -> it1.id == it.fkSensor }
                     if (elem == null) {
-                        Logger.log(2, "Error Captura", "Elemento ${it.fkSensor} no encontrado")
+                        //Logger.log(2, "Error Captura", "Elemento ${it.fkSensor} no encontrado")
                         return listOf()
                     }
                     val datos = getDataCache(nSensor, elem.name, model.fldNDuration)
                     if (datos == null) {
-                        Logger.log(2, "Error Captura", "Cache ${nSensor}:${elem.name} no encontrada")
+                        //Logger.log(2, "Error Captura", "Cache ${nSensor}:${elem.name} no encontrada")
                         return listOf()
                     }
                     if (datos.isEmpty()) {
-                        Logger.log(2, "Error Captura", "Cache ${nSensor}:${elem.name} vacia")
+                        //Logger.log(2, "Error Captura", "Cache ${nSensor}:${elem.name} vacia")
                         return listOf()
                     }
                     datos.forEach { it1 ->
@@ -502,7 +508,7 @@ class MMCore(val context: Any?) {
                     datas.add(Triple(it.id, data, listOf()))
                     data = emptyList()
                 } else {
-                    Logger.log(2, "MMCORE-LOG", "MovenetCache Size: ${moveNetCache.size}")
+                    //Logger.log(2, "MMCORE-LOG", "MovenetCache Size: ${moveNetCache.size}")
                     /*if (moveNetCache.size < 10 * model.fldNDuration) {
                         return listOf()
                     }*/
@@ -679,6 +685,9 @@ class MMCore(val context: Any?) {
             deviceManager.addSensor()
         }
     }
+    fun setupImageDetector(){
+        imageDetector.setupDetector()
+    }
 
     fun getLabels(index: Int): List<String>{
         val res: MutableList<String> = mutableListOf()
@@ -771,7 +780,7 @@ class MMCore(val context: Any?) {
         }
         val datos = explicabilidad[index]
         maxExplicabilidad[index] = 0f
-        Logger.log(1, "MMCORE-Explicabilidad", "Resultados: ${estadisticas[index].map { r -> "${r.id}-${r.idPosicion}"}} Datos:  ${datos.map { r -> "${r.first}-${r.third}"}}")
+        //Logger.log(1, "MMCORE-Explicabilidad", "Resultados: ${estadisticas[index].map { r -> "${r.id}-${r.idPosicion}"}} Datos:  ${datos.map { r -> "${r.first}-${r.third}"}}")
         val resultados: MutableList<Triple<Int, Pair<Float, MutableList<Pair<Float, Float>>>, Int>> = datos.map { d -> Triple(d.first, Pair(getVariabilidad(estadisticas[index].first { e -> e.id == d.first && e.idPosicion == d.third }), MutableList(4){Pair(0f, 0f)}), d.third) }.toMutableList()
         resultados.forEach { res ->
             val dato = datos.firstOrNull { d -> d.first == res.first && d.third == res.third }
@@ -800,7 +809,7 @@ class MMCore(val context: Any?) {
                     }
                 }
             }else{
-                Logger.log(1, "MMCORE-Explicabilidad", "No match resultados y datos: resultados: ${estadisticas[index].map { r -> r.id}} Datos:  ${datos.map { r -> r.first}}")
+                //Logger.log(1, "MMCORE-Explicabilidad", "No match resultados y datos: resultados: ${estadisticas[index].map { r -> r.id}} Datos:  ${datos.map { r -> r.first}}")
             }
         }
         val res = resultados.flatMapIndexed{ _, triple -> triple.second.second.mapIndexed{ index2, valor -> ResultadoEstadistica(sensor=triple.first, posicion=triple.third, instante=index2, valor=valor.first, variabilidad=triple.second.first, correccion=valor.second)}}.sortedByDescending { it1 -> abs(it1.valor) }
@@ -814,20 +823,16 @@ class MMCore(val context: Any?) {
         rotacion = degrees
     }
     fun setObjetsLabels(lista: List<ObjetLabel>){
-        //objectDetector.setObjetsLabels(lista)
+        imageDetector.setObjetsLabels(lista)
     }
     fun addObjetLabel(objeto: ObjetLabel){
-        //objectDetector.addObjetLabel(objeto)
+        imageDetector.addObjetLabel(objeto)
     }
     fun addImage(bitmap: Any){
         val rotation = if(!frontCamera) (90f+rotacion) else (270f + (360 - rotacion))
-        /*if(objectDetector.objectLabels.size >= 1 && libreInfObj) {
-            libreInfObj = false
-            Logger.log(1, "OBJECTINFERENCE", "Object inference ocupado")
-            objectDetector.detectLiveStreamImage(
-                bitmap = bitmap, rotation = rotation
-            )
-        }*/
+        imageDetector.detectLiveStreamImage(
+            bitmap = bitmap, rotation = rotation
+        )
     }
 
     fun setUmbrales(umbrales: List<Pair<Int, Int>>){
@@ -862,8 +867,8 @@ class MMCore(val context: Any?) {
             val indicesCopy = indices.toList()
             val moveNetCacheCopy = moveNetCache.toList()
             if (modelosStatus.filter { it1 -> it1 == 0 }.isNotEmpty()) {
-                Logger.log(1, "MMCORE", "Preparando inferencia ${inferenceCounter[0]}")
-                Logger.log(1, "MMCORE_REND", "Inferencia")
+                //Logger.log(1, "MMCORE", "Preparando inferencia ${inferenceCounter[0]}")
+                //Logger.log(1, "MMCORE_REND", "Inferencia")
                 val duracionMax = modelosCopy.maxOf { it1 -> it1.fldNDuration }
                 val dispositivosCombinados = modelosCopy.flatMap { it1 -> it1.dispositivos }
                     .distinctBy { it1 -> Pair(it1.fkSensor, it1.fkPosicion) }
@@ -1009,7 +1014,7 @@ class MMCore(val context: Any?) {
                     //modelos[1].let{model ->
                     //val index = 1
                     if (indicesCopy.contains(index)) {
-                        Logger.log(1, "MMCORE_INF", "Media: $media")
+                        //Logger.log(1, "MMCORE_INF", "Media: $media")
                         if (media >= 0.2f || model.fkTipo != 2) {
                             modelosStatus[index] = 1
                             var minimoPunto = false
@@ -1037,7 +1042,7 @@ class MMCore(val context: Any?) {
                                         }
                                     }
                                 }
-                            Logger.log(1, "MMCORE_INF", "Min: $minimoPunto")
+                            //Logger.log(1, "MMCORE_INF", "Min: $minimoPunto")
                             if (!minimoPunto) {
                                 var inferir = true
                                 val datasList: Array<Array<Array<Array<FloatArray>>>> =
@@ -1110,7 +1115,7 @@ class MMCore(val context: Any?) {
                         }
                     }
                 }
-                Logger.log(1, "MMCORE", "Espera de siguiente inferencia")
+                //Logger.log(1, "MMCORE", "Espera de siguiente inferencia")
             } else {
                 Logger.log(1, "MMCORE", "Inferencia abortada por ningun motionDetector libre")
             }
@@ -1150,7 +1155,7 @@ class MMCore(val context: Any?) {
 
     fun correccionesIniciales(index: Int): Boolean{return false}
 
-    /*override fun onResultsPersons(resultList: List<Person>) {
+    override fun onResultsPersons(resultList: List<Person>) {
         if(resultList.size > 0) {
             val result = resultList[0]
             val instante = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
@@ -1198,14 +1203,11 @@ class MMCore(val context: Any?) {
             }
         }
     }
-    override fun onResults(result: List<DetectedObject>) {
+    override fun onResultsObject(result: List<Objeto>) {
         _objectsRawFlow.value = result
         libreInfObj = true
     }
     override fun onError(error: String, errorCode: Int) {
         Logger.log(2, "MMCORE-ERROR", "$errorCode: $error")
     }
-    override fun onErrorObject(error: String, errorCode: Int) {
-        Logger.log(2, "MMCORE-ERROR", "$errorCode: $error")
-    }*/
 }

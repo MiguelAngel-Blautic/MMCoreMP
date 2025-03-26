@@ -180,7 +180,7 @@ class DevicesManager(context: Any?): BluetoothManagerCallback {
         value: ByteArray,
         characteristic: String
     ) {
-        Logger.log(1, "Characteristic: $peripheral", "$characteristic")
+        //Logger.log(1, "Characteristic: $peripheral", "$characteristic")
         getSensorNum(peripheral)?.characteristicUpdate(value, characteristic)
     }
 
@@ -188,7 +188,7 @@ class DevicesManager(context: Any?): BluetoothManagerCallback {
         devices.forEach {
             val peripheral = it.address
             val typeSensor = it.typeSensor
-            Logger.log(1, "TypeSENSOR", "${typeSensor.name}")
+            //Logger.log(1, "TypeSENSOR", "${typeSensor.name}")
             when (typeSensor) {
                 TypeSensor.BIO1 -> {
                     // Acelerometro
@@ -245,7 +245,7 @@ class DevicesManager(context: Any?): BluetoothManagerCallback {
 
     override fun onDiscoveredServices(peripheral: String) {
         val typeSensor = getSensorNum(peripheral)!!.typeSensor
-        Logger.log(1, "TypeSENSOR", "${typeSensor.name}")
+        //Logger.log(1, "TypeSENSOR", "${typeSensor.name}")
         /*when (typeSensor) {
             TypeSensor.BIO1 -> {
                 // Acelerometro

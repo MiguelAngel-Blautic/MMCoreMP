@@ -57,14 +57,14 @@ class BluetoothManagerIOS(bluetoothManagerCallback: BluetoothManagerCallback) :
         scope.launch(Dispatchers.Main) {
             bluetoothManagerAuxIOS.discoverPeriferalFlow.collect{item ->
                 if(item != null) {
-                    Logger.log(1, "IOS-CORE", "Device discovered: ${item.first}--${item.third}")
+                    //Logger.log(1, "IOS-CORE", "Device discovered: ${item.first}--${item.third}")
                     val serviceData = item.third["kCBAdvDataServiceData"] as? Map<*, *>
                     if(serviceData != null) {
                         val key = serviceData.keys.first()
                         if(key != null) {
                             val firstEntry = serviceData[key]
                             if(firstEntry != null) {
-                                Logger.log(1, "IOS-CORE", "firstEntry: ${firstEntry}")
+                                //Logger.log(1, "IOS-CORE", "firstEntry: ${firstEntry}")
                                 val bytesIni = (firstEntry as? NSData)?.toByteArray()
                                 if(bytesIni != null) {
                                     val bytes = ByteArray(bytesIni.size + 7)
@@ -74,7 +74,7 @@ class BluetoothManagerIOS(bluetoothManagerCallback: BluetoothManagerCallback) :
                                     for (i in bytesIni.indices) {
                                         bytes[i + 7] = bytesIni[i]
                                     }
-                                    Logger.log(1, "IOS-CORE", "bytes: ${bytes.map { "$it" }}")
+                                    //Logger.log(1, "IOS-CORE", "bytes: ${bytes.map { "$it" }}")
                                     val name = item.third["kCBAdvDataLocalName"] as? String
                                     discoveredPeripheralPrecess(
                                         name ?: "",

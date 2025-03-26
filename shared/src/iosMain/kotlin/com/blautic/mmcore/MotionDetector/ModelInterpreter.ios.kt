@@ -49,10 +49,10 @@ class ModelInterpreterIOS(): ModelInterpreter() {
 
             val fileManager = NSFileManager.defaultManager
             val tempDir = fileManager.temporaryDirectory.path
-            val filePath = tempDir + "/model.mlmodel"
+            val filePath = tempDir + "/$url.mlmodel"
 
             data?.writeToFile(filePath, atomically = true)
-            Logger.log(1, "DESCARGADO", "Descargado en $filePath")
+            //Logger.log(1, "DESCARGADO", "Descargado en $filePath")
             filePath
         } catch (e: Exception) {
             Logger.log(2, "ERROR DESCARGA", "${e.message}")
@@ -65,13 +65,13 @@ class ModelInterpreterIOS(): ModelInterpreter() {
         val modelPath = downloadModel(url)
         if (modelPath != null) {
             try {
-                Logger.log(1, "DESCARGADO", "Guardado en $modelPath")
+                //Logger.log(1, "DESCARGADO", "Guardado en $modelPath")
                 val fileUrl = NSURL.fileURLWithPath(modelPath)
                 val configuration = MLModelConfiguration()
-                Logger.log(1, "DESCARGADO", "URL en $fileUrl")
+                //Logger.log(1, "DESCARGADO", "URL en $fileUrl")
                 // Compilar el modelo si es necesario
                 val compiledUrl = MLModel.compileModelAtURL(fileUrl, null)
-                Logger.log(1, "DESCARGADO", "URL compilada en $compiledUrl")
+                //Logger.log(1, "DESCARGADO", "URL compilada en $compiledUrl")
                 model = MLModel.modelWithContentsOfURL(compiledUrl!!, configuration,null)
 
                 if (model != null) {
@@ -184,7 +184,7 @@ class ModelInterpreterIOS(): ModelInterpreter() {
             val outputMLArray = model!!.predictionFromFeatures(featuresProvider, null)
             outputMLArray?.let {
                 results = mlMultiArrayToMap(it.featureValueForName("Identity")!!.multiArrayValue!!)
-                Logger.log(1, "Features", "${results[0]!![0]}")
+                //Logger.log(1, "Features", "${results[0]!![0]}")
             }
         } catch (e: Exception) {
             Logger.log(2,"Error", "Error en la inferencia: ${e.message}")

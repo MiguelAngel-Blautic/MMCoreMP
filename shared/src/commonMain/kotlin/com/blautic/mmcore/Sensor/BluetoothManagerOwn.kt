@@ -65,7 +65,7 @@ abstract class BluetoothManagerOwn(val bluetoothManagerCallback: BluetoothManage
     abstract fun write(peripheral: String, characteristic: String, value: ByteArray)
     abstract fun enableNotify(peripheral: String, characteristic: String, value: Boolean)
     fun checkButton(scan: ByteArray, tipo: TypeSensor): Boolean{
-        Logger.log(1, "CheckButton", "${tipo.name}: (${scan.size}) ${scan.map { "$it" }}")
+        //Logger.log(1, "CheckButton", "${tipo.name}: (${scan.size}) ${scan.map { "$it" }}")
         return when (tipo) {
             TypeSensor.BIO2 -> {
                 if(scan.size > 10)
@@ -132,7 +132,7 @@ abstract class BluetoothManagerOwn(val bluetoothManagerCallback: BluetoothManage
     ) {
         if(bytes.size > 6) {
             if (checkIfTarget(bytes)) {
-                Logger.log(1, "CONEXION", "Device valid: ${deviceName}-${bytes.map { "$it-" }}")
+                //Logger.log(1, "CONEXION", "Device valid: ${deviceName}-${bytes.map { "$it-" }}")
                 val type = when {
                     bytes[6] == 0X25.toByte() && bytes[5] == 0xBC.toByte() -> { // Compruebo si es Bio 1
                         TypeSensor.BIO1

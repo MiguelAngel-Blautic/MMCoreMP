@@ -128,7 +128,7 @@ class Device(val numDevice: Int, var address: String, val typeSensor: TypeSensor
     }
     fun parseHR(parse: BleBytesParser){
         val hr = parse.getIntValue(FORMAT_UINT8)
-        Logger.log(1, "HR1", "${hr}")
+        //Logger.log(1, "HR1", "${hr}")
         sensorDatas[12].add(hr.toFloat(), sampleHr)
         sensorDatos[12] = Pair(hr.toFloat(), TypeData.HR)
         sampleHr += 1

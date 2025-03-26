@@ -5,7 +5,5 @@ target 'shared' do
 
   # Incluir el framework generado por KMP
   pod 'Shared', :path => '../shared'
-
-  # Incluir TensorFlow Lite
-  pod 'TensorFlowLiteSwift', '~> 2.10.0'
+  pod 'MediaPipeTasksVision'
 end

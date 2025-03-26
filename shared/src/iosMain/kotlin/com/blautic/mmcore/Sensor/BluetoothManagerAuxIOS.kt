@@ -101,13 +101,13 @@ class BluetoothManagerAuxIOS: NSObject(), CBCentralManagerDelegateProtocol, CBPe
         val searchChar = characteristic1.substring(4, 8).uppercase()
         val peripheral = discoveredPeripherals[peripheralName]  // Asumimos que `BlePeripheral` tiene un `CBPeripheral` en la propiedad `peripheral`
         if(peripheral != null) {
-            Logger.log(1, "WRITE","peripheral ${peripheral}")
-            Logger.log(1, "WRITE","services ${peripheral.services}")
-            Logger.log(1, "WRITE","characteristic ${searchChar}")
+            //Logger.log(1, "WRITE","peripheral ${peripheral}")
+            //Logger.log(1, "WRITE","services ${peripheral.services}")
+            //Logger.log(1, "WRITE","characteristic ${searchChar}")
             val characteristicsList = peripheral.services?.flatMap {
                 (it as? CBService)?.characteristics ?: emptyList()
             }
-            Logger.log(1, "WRITE","characteristics list ${characteristicsList?.map { (it as? CBCharacteristic)?.UUID?.UUIDString }}}")
+            //Logger.log(1, "WRITE","characteristics list ${characteristicsList?.map { (it as? CBCharacteristic)?.UUID?.UUIDString }}}")
             // Buscar la característica con el UUID proporcionado
             val characteristic = characteristicsList?.find { (it as? CBCharacteristic)?.UUID?.UUIDString == searchChar } as? CBCharacteristic
 
@@ -115,7 +115,7 @@ class BluetoothManagerAuxIOS: NSObject(), CBCentralManagerDelegateProtocol, CBPe
                 // Escribir el valor en la característica
                 peripheral.writeValue(value.toNSDataNoCopy(), characteristic, 0L)
                 // Aquí puedes agregar cualquier lógica adicional basada en el tipo de sensor
-                Logger.log(1, "WRITE","Escribiendo en característica ${characteristic} con valor $value")
+                //Logger.log(1, "WRITE","Escribiendo en característica ${characteristic} con valor $value")
             } else {
                 Logger.log(2, "WRITE","Característica con UUID $characteristic no encontrada en el periférico.")
             }
